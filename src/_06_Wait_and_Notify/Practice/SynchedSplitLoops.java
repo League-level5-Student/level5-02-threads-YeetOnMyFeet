@@ -17,29 +17,51 @@ printed in order.
 
 public class SynchedSplitLoops {
 	static int counter = 0;
-	
+	private static final Object swimmingpool = new Object();
+
 	public static void main(String[] args) {
+
 		Thread t1 = new Thread(() -> {
-			for(int i = 0; i < 100000; i++) {
-				counter++;
+			synchronized (swimmingpool) {
+				for (int i = 0; i < 1000; i++) {
+					try {
+						swimmingpool.wait();
+					} catch (InterruptedException e) {
+						// TODO: handle exception
+						System.out.println("Thread was interrupted");
+					}
+					counter++;
+					swimmingpool.notify();
+				}
 			}
+
 		});
-		
+
 		Thread t2 = new Thread(() -> {
-			for(int i = 0; i < 100000; i++) {
-				System.out.println(counter);
+			synchronized (swimmingpool) {
+				for (int i = 0; i < 1000; i++) {
+					System.out.println(counter);
+					swimmingpool.notify();
+				
+				try {
+					swimmingpool.wait();
+				} catch (InterruptedException e) {
+					// TODO: handle exception
+					System.out.println("Thread was interrupted");
+				}}
 			}
+
 		});
-		
+
 		t1.start();
 		t2.start();
-		
+
 		try {
 			t1.join();
 			t2.join();
 		} catch (InterruptedException e) {
 			System.err.println("Could not join threads");
 		}
-		
+
 	}
 }
